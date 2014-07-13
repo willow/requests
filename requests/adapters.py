@@ -9,7 +9,8 @@ and maintain connections.
 """
 
 import socket
-
+import logging
+logger = logging.getLogger(__name__)
 from .models import Response
 from .packages.urllib3.poolmanager import PoolManager, proxy_from_url
 from .packages.urllib3.response import HTTPResponse
@@ -318,9 +319,9 @@ class HTTPAdapter(BaseAdapter):
         :param cert: (optional) Any user-provided SSL certificate to be trusted.
         :param proxies: (optional) The proxies dictionary to apply to the request.
         """
-
+        logger.info('begin: send: about to get conn')
         conn = self.get_connection(request.url, proxies)
-
+        logger.info('complete: send: about to get conn')                    
         self.cert_verify(conn, request.url, verify, cert)
         url = self.request_url(request, proxies)
         self.add_headers(request)
@@ -331,6 +332,7 @@ class HTTPAdapter(BaseAdapter):
 
         try:
             if not chunked:
+                logger.info('begin: send: about to get response not chunked')
                 resp = conn.urlopen(
                     method=request.method,
                     url=url,
@@ -343,19 +345,21 @@ class HTTPAdapter(BaseAdapter):
                     retries=self.max_retries,
                     timeout=timeout
                 )
-
+                logger.info('complete: send: about to get response not chunked')
             # Send the request.
             else:
                 if hasattr(conn, 'proxy_pool'):
                     conn = conn.proxy_pool
-
+                logger.info('begin: send: about to get conn chunked')
                 low_conn = conn._get_conn(timeout=timeout)
-
+                logger.info('complete: send: about to get conn chunked')
                 try:
+                
+                    logger.info('begin: send: about to put request chunked')
                     low_conn.putrequest(request.method,
                                         url,
                                         skip_accept_encoding=True)
-
+                    logger.info('complete: send: about to put request chunked')
                     for header, value in request.headers.items():
                         low_conn.putheader(header, value)
 
@@ -367,8 +371,9 @@ class HTTPAdapter(BaseAdapter):
                         low_conn.send(i)
                         low_conn.send(b'\r\n')
                     low_conn.send(b'0\r\n\r\n')
-
+                    logger.info('begin: send: about to get response chunked')
                     r = low_conn.getresponse()
+                    logger.info('complete: send: about to get response chunked')
                     resp = HTTPResponse.from_httplib(
                         r,
                         pool=conn,
@@ -379,12 +384,15 @@ class HTTPAdapter(BaseAdapter):
                 except:
                     # If we hit any problems here, clean up the connection.
                     # Then, reraise so that we can handle the actual exception.
+                    logger.info('begin: send: about to close response chunked exception')
                     low_conn.close()
+                    logger.info('complete: about to close response chunked exception')
                     raise
                 else:
                     # All is well, return the connection to the pool.
+                    logger.info('begin: send: about to put con back to pool chunked')
                     conn._put_conn(low_conn)
-
+                    logger.info('complete: send: about to put con back to pool chunked')
         except socket.error as sockerr:
             raise ConnectionError(sockerr, request=request)
 
@@ -402,4 +410,7 @@ class HTTPAdapter(BaseAdapter):
             else:
                 raise
 
-        return self.build_response(request, resp)
+        logger.info('begin: send: about to build response')
+        ret_val = self.build_response(request, resp)
+        logger.info('complete: send: about to build response')
+        return ret_val
