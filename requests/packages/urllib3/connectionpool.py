@@ -291,7 +291,9 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             conn.timeout = timeout_obj.connect_timeout
             # conn.request() calls httplib.*.request, not the method in
             # urllib3.request. It also calls makefile (recv) on the socket.
+            log.info('begin: _make_request: about to call request')
             conn.request(method, url, **httplib_request_kw)
+            log.info('complete: _make_request: about to call request')
         except SocketTimeout:
             raise ConnectTimeoutError(
                 self, "Connection to %s timed out. (connect timeout=%s)" %
@@ -319,9 +321,13 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
         # Receive the response from the server
         try:
             try: # Python 2.7+, use buffering of HTTP responses
+                log.info('begin: _make_request: conn.get reponse with buffer')
                 httplib_response = conn.getresponse(buffering=True)
+                log.info('complete: _make_request: conn.get reponse with buffer')
             except TypeError: # Python 2.6 and older
+                log.info('begin: _make_request: conn.get reponse with no buffer')
                 httplib_response = conn.getresponse()
+                log.info('complete: _make_request: conn.get reponse with no buffer')
         except SocketTimeout:
             raise ReadTimeoutError(
                 self, url, "Read timed out. (read timeout=%s)" % read_timeout)
