@@ -220,7 +220,7 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             log.info("Resetting dropped connection: %s" % self.host)
             conn.close()
         log.info('begin: returning conn or self new conn')
-        ret_val conn or self._new_conn()
+        ret_val = conn or self._new_conn()
         log.info('complete: returning conn or self new conn')
         return ret_val
 
