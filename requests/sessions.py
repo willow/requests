@@ -8,6 +8,8 @@ This module provides a Session object to manage and persist settings across
 requests (cookies, auth, proxies).
 
 """
+import logging
+logger=logging.getLogger(__name__)
 import os
 from collections import Mapping
 from datetime import datetime
@@ -411,7 +413,7 @@ class Session(SessionRedirectMixin):
         """
 
         method = builtin_str(method)
-
+        logger.info('begin: request: about to get request')
         # Create the Request.
         req = Request(
             method = method.upper(),
@@ -424,8 +426,10 @@ class Session(SessionRedirectMixin):
             cookies = cookies,
             hooks = hooks,
         )
+        logger.info('complete: request: about to get request')
+        logger.info('begin: request: about to prep request')
         prep = self.prepare_request(req)
-
+        logger.info('complete: request: about to prep request')
         proxies = proxies or {}
 
         # Gather clues from the surrounding environment.
@@ -458,8 +462,9 @@ class Session(SessionRedirectMixin):
             'proxies': proxies,
             'allow_redirects': allow_redirects,
         }
+        logger.info('begin: request: about to send')
         resp = self.send(prep, **send_kwargs)
-
+        logger.info('completest: about to send')
         return resp
 
     def get(self, url, **kwargs):
