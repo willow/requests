@@ -202,8 +202,9 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
         """
         conn = None
         try:
+            log.info('begin: _get_conn: about to get a conn from the pool')
             conn = self.pool.get(block=self.block, timeout=timeout)
-
+            log.info('complete: _get_conn: about to get a conn from the pool')
         except AttributeError: # self.pool is None
             raise ClosedPoolError(self, "Pool is closed.")
 
@@ -218,8 +219,10 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
         if conn and is_connection_dropped(conn):
             log.info("Resetting dropped connection: %s" % self.host)
             conn.close()
-
-        return conn or self._new_conn()
+        log.info('begin: returning conn or self new conn')
+        ret_val conn or self._new_conn()
+        log.info('complete: returning conn or self new conn')
+        return ret_val
 
     def _put_conn(self, conn):
         """
@@ -485,8 +488,9 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
 
         try:
             # Request a connection from the queue
+            log.info('begin: urlopen: about to get a conn from the pool')
             conn = self._get_conn(timeout=pool_timeout)
-
+            log.info('complete: urlopen: about to get a conn from the pool')
             # Make the request on the httplib connection object
             httplib_response = self._make_request(conn, method, url,
                                                   timeout=timeout,
@@ -497,13 +501,13 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             # it will also try to release it and we'll have a double-release
             # mess.
             response_conn = not release_conn and conn
-
+            log.info('begin: urlopen: about to get response from httplib')
             # Import httplib's response into our own wrapper object
             response = HTTPResponse.from_httplib(httplib_response,
                                                  pool=self,
                                                  connection=response_conn,
                                                  **response_kw)
-
+            log.info('complete: urlopen: about to get response from httplib')
             # else:
             #     The connection will be put back into the pool when
             #     ``response.release_conn()`` is called (implicitly by
@@ -672,9 +676,11 @@ class HTTPSConnectionPool(HTTPConnectionPool):
             extra_params['strict'] = self.strict
         extra_params.update(self.conn_kw)
 
+        log.info('begin: create connection class')
         conn = self.ConnectionCls(host=actual_host, port=actual_port,
                                   timeout=self.timeout.connect_timeout,
                                   **extra_params)
+        log.info('complete: just about to create connection class')
         if self.proxy is not None:
             # Enable Nagle's algorithm for proxies, to avoid packet
             # fragmentation.
