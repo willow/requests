@@ -530,24 +530,30 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             raise SSLError(e)
 
         except (TimeoutError, HTTPException, SocketError) as e:
+            log.info("urlopen: error here", exc_info=True)
             if conn:
                 # Discard the connection for these exceptions. It will be
                 # be replaced during the next _get_conn() call.
+                log.info("begin: urlopen: begin close")
                 conn.close()
+                log.info("complete: urlopen: begin close")
                 conn = None
 
             if not retries:
                 if isinstance(e, TimeoutError):
                     # TimeoutError is exempt from MaxRetryError-wrapping.
                     # FIXME: ... Not sure why. Add a reason here.
+                    log.info("urlopen: about to raise timeout error - no retires")
                     raise
 
                 # Wrap unexpected exceptions with the most appropriate
                 # module-level exception and re-raise.
                 if isinstance(e, SocketError) and self.proxy:
+                    log.info("urlopen: about to raise proxy error - no retires")
                     raise ProxyError('Cannot connect to proxy.', e)
 
                 if retries is False:
+                    log.info("urlopen: about to raise connection  error - no retires")
                     raise ConnectionError('Connection failed.', e)
 
                 raise MaxRetryError(self, url, e)
@@ -560,6 +566,7 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
                 # Put the connection back to be reused. If the connection is
                 # expired then it will be None, which will get replaced with a
                 # fresh connection during _get_conn.
+                log.info("urlopen: about to put conn back in finally")
                 self._put_conn(conn)
 
         if not conn:
