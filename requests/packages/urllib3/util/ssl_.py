@@ -133,7 +133,7 @@ if SSLContext is not None:  # Python 3.2+
             log.info('complete: ssl_wrap_socket: wrap socket with host name')
             return ret_val
         log.info('begin: ssl_wrap_socket: wrap socket without host name')
-        ret_val context.wrap_socket(sock)
+        ret_val = context.wrap_socket(sock)
         log.info('complete: ssl_wrap_socket: wrap socket without host name')
         return ret_val
 
