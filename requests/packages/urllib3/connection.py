@@ -7,6 +7,8 @@
 import sys
 import socket
 from socket import timeout as SocketTimeout
+import logging
+log = logging.getLogger(__name__)
 
 try: # Python 3
     from http.client import HTTPConnection as _HTTPConnection, HTTPException
@@ -76,12 +78,41 @@ class HTTPConnection(_HTTPConnection, object):
 
         # Superclass also sets self.source_address in Python 2.7+.
         _HTTPConnection.__init__(self, *args, **kw)  
+        
+    def _send_request(self, method, url, body, headers):
+        log.info("begin: httpconection: send req")
+        super()._send_request(method, url, body, headers)
+        log.info("completed: httpconection: send req")
+    
+    def putrequest(self, method, url, skip_host=0, skip_accept_encoding=0):
+        log.info("begin: httpconection: put req")
+        super().putrequest(method, url, skip_host, skip_accept_encoding)
+        log.info("completed: httpconection: put req")
+        
+    def _send_output(self, message_body=None):
+        log.info("begin: httpconection: _send_output")
+        super()._send_output(message_body)
+        log.info("completed: httpconection: _send_output")
+        
+    def send(self, data):
+        log.info("begin: httpconection: send")
+        if self.sock:
+            old_method = self.sock.sendall
+            def sock_wrap(self, sendalldata):
+                log.info("begin: httpconection: send: before sock.sendall")
+                old_method(sendalldata)
+                log.info("completed: httpconection: send: before sock.sendall")
+            self.sock.sendall = sock_wrap
+            
+        super().send(data)
+        log.info("completed: httpconection: send")
 
     def _new_conn(self):
         """ Establish a socket connection and set nodelay settings on it.
 
         :return: a new socket connection
         """
+        log.info("begin: httpconection: _new_conn")
         extra_args = []
         if self.source_address:  # Python 2.7+
             extra_args.append(self.source_address)
@@ -90,10 +121,11 @@ class HTTPConnection(_HTTPConnection, object):
             (self.host, self.port), self.timeout, *extra_args)
         conn.setsockopt(
             socket.IPPROTO_TCP, socket.TCP_NODELAY, self.tcp_nodelay)
-
+        log.info("completed: httpconection: _new_conn")
         return conn
 
     def _prepare_conn(self, conn):
+        log.info("begin: httpconection: _prepare_conn")
         self.sock = conn
         # the _tunnel_host attribute was added in python 2.6.3 (via
         # http://hg.python.org/cpython/rev/0f57b30a152f) so pythons 2.6(0-2) do
@@ -101,10 +133,13 @@ class HTTPConnection(_HTTPConnection, object):
         if getattr(self, '_tunnel_host', None):
             # TODO: Fix tunnel so it doesn't depend on self.sock state.
             self._tunnel()
+        log.info("completed: httpconection: _new_conn")
 
     def connect(self):
+        log.info("begin: httpconection: http connect")
         conn = self._new_conn()
         self._prepare_conn(conn)
+        log.info("completed: httpconection: http connect")
 
 
 class HTTPSConnection(HTTPConnection):
@@ -124,10 +159,11 @@ class HTTPSConnection(HTTPConnection):
         self._protocol = 'https'
 
     def connect(self):
+        log.info("begin: https conection: connect")
         conn = self._new_conn()
         self._prepare_conn(conn)
         self.sock = ssl.wrap_socket(conn, self.key_file, self.cert_file)
-
+        log.info("begin: https conection: connect")
 
 class VerifiedHTTPSConnection(HTTPSConnection):
     """
@@ -153,6 +189,7 @@ class VerifiedHTTPSConnection(HTTPSConnection):
     def connect(self):
         # Add certificate verification
 
+        log.info("begin: https verified conection: connect")
         try:
             sock = socket.create_connection(
                 address=(self.host, self.port), timeout=self.timeout,
@@ -161,10 +198,10 @@ class VerifiedHTTPSConnection(HTTPSConnection):
             raise ConnectTimeoutError(
                 self, "Connection to %s timed out. (connect timeout=%s)" %
                 (self.host, self.timeout))
-
+        log.info("begin: https verified : connect: set socket")
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY,
                         self.tcp_nodelay)
-
+        log.info("completed: https verified : connect: set socket")
         resolved_cert_reqs = resolve_cert_reqs(self.cert_reqs)
         resolved_ssl_version = resolve_ssl_version(self.ssl_version)
 
@@ -197,7 +234,7 @@ class VerifiedHTTPSConnection(HTTPSConnection):
                 match_hostname(self.sock.getpeercert(),
                                self.assert_hostname or hostname)
 
-
+        log.info("begin: https verified conection: connect")
 if ssl:
     # Make a copy for testing.
     UnverifiedHTTPSConnection = HTTPSConnection
