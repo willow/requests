@@ -238,7 +238,7 @@ class VerifiedHTTPSConnection(HTTPSConnection):
                 log.info("begin: https verified : connect: match hostname")
                 match_hostname(self.sock.getpeercert(),
                                self.assert_hostname or hostname)
-               log.info("complete: https verified : connect: match host name")
+                log.info("complete: https verified : connect: match host name")
         if self.sock:
             old_method = self.sock.sendall
             def sock_wrap(sendalldata):
