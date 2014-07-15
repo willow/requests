@@ -233,7 +233,7 @@ class VerifiedHTTPSConnection(HTTPSConnection):
                 log.info("begin: https verified : connect: assert fingerprint")
                 assert_fingerprint(self.sock.getpeercert(binary_form=True),
                                    self.assert_fingerprint)
-               log.info("complete: https verified : connect: assert fingerprint")
+                log.info("complete: https verified : connect: assert fingerprint")
             elif self.assert_hostname is not False:
                 log.info("begin: https verified : connect: match hostname")
                 match_hostname(self.sock.getpeercert(),
