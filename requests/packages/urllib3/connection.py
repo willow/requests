@@ -96,13 +96,7 @@ class HTTPConnection(_HTTPConnection, object):
         
     def send(self, data):
         log.info("begin: httpconection: send")
-        if self.sock:
-            old_method = self.sock.sendall
-            def sock_wrap(self, sendalldata):
-                log.info("begin: httpconection: send: before sock.sendall")
-                old_method(sendalldata)
-                log.info("completed: httpconection: send: before sock.sendall")
-            self.sock.sendall = sock_wrap
+        
             
         super().send(data)
         log.info("completed: httpconection: send")
@@ -233,7 +227,14 @@ class VerifiedHTTPSConnection(HTTPSConnection):
             elif self.assert_hostname is not False:
                 match_hostname(self.sock.getpeercert(),
                                self.assert_hostname or hostname)
-
+        if self.sock:
+            old_method = self.sock.sendall
+            def sock_wrap(sock_self, sendalldata):
+                log.info("begin: httpconection: send: before sock.sendall")
+                old_method(sock_self, sendalldata)
+                log.info("completed: httpconection: send: before sock.sendall")
+            self.sock.sendall = sock_wrap
+            
         log.info("begin: https verified conection: connect")
 if ssl:
     # Make a copy for testing.
