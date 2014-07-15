@@ -196,8 +196,12 @@ class VerifiedHTTPSConnection(HTTPSConnection):
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY,
                         self.tcp_nodelay)
         log.info("completed: https verified : connect: set socket")
+        log.info("begin: https verified : connect: resolve cert reqs")
         resolved_cert_reqs = resolve_cert_reqs(self.cert_reqs)
+        log.info("completed: https verified : connect: resolve cert reqs")
+        log.info("begin: https verified : connect: resolve ssl ver")
         resolved_ssl_version = resolve_ssl_version(self.ssl_version)
+        log.info("complete: https verified : connect: resolve ssl ver")
 
         hostname = self.host
         if getattr(self, '_tunnel_host', None):
@@ -207,26 +211,34 @@ class VerifiedHTTPSConnection(HTTPSConnection):
             self.sock = sock
             # Calls self._set_hostport(), so self.host is
             # self._tunnel_host below.
+            log.info("begin: https verified : connect: _tunnel outer call")
             self._tunnel()
+            log.info("complete: https verified : connect: _tunnel outer call")
 
             # Override the host with the one we're requesting data from.
             hostname = self._tunnel_host
 
         # Wrap socket using verification with the root certs in
         # trusted_root_certs
+        log.info("begin: https verified : connect: ssl_wrap_socket")
         self.sock = ssl_wrap_socket(sock, self.key_file, self.cert_file,
                                     cert_reqs=resolved_cert_reqs,
                                     ca_certs=self.ca_certs,
                                     server_hostname=hostname,
                                     ssl_version=resolved_ssl_version)
-
+        log.info("complete: https verified : connect: ssl_wrap_socket")
+        
         if resolved_cert_reqs != ssl.CERT_NONE:
             if self.assert_fingerprint:
+                log.info("begin: https verified : connect: assert fingerprint")
                 assert_fingerprint(self.sock.getpeercert(binary_form=True),
                                    self.assert_fingerprint)
+               log.info("complete: https verified : connect: assert fingerprint")
             elif self.assert_hostname is not False:
+                log.info("begin: https verified : connect: match hostname")
                 match_hostname(self.sock.getpeercert(),
                                self.assert_hostname or hostname)
+               log.info("complete: https verified : connect: match host name")
         if self.sock:
             old_method = self.sock.sendall
             def sock_wrap(sendalldata):
@@ -235,7 +247,7 @@ class VerifiedHTTPSConnection(HTTPSConnection):
                 log.info("completed: httpconection: send: before sock.sendall")
             self.sock.sendall = sock_wrap
             
-        log.info("begin: https verified conection: connect")
+        log.info("completed: https verified conection: connect")
 if ssl:
     # Make a copy for testing.
     UnverifiedHTTPSConnection = HTTPSConnection
