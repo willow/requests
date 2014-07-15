@@ -2,7 +2,8 @@ from binascii import hexlify, unhexlify
 from hashlib import md5, sha1
 
 from ..exceptions import SSLError
-
+import logging
+log = logging.getLogger(__name__)
 
 try:  # Test for SSL features
     SSLContext = None
@@ -103,7 +104,9 @@ if SSLContext is not None:  # Python 3.2+
         :param server_hostname:
             Hostname of the expected certificate
         """
+        log.info('begin: ssl_wrap_socket: about to get ssl context')
         context = SSLContext(ssl_version)
+        log.info('complete: ssl_wrap_socket: about to get ssl context')
         context.verify_mode = cert_reqs
 
         # Disable TLS compression to migitate CRIME attack (issue #309)
@@ -112,17 +115,27 @@ if SSLContext is not None:  # Python 3.2+
 
         if ca_certs:
             try:
+                log.info('begin: ssl_wrap_socket: load verify locations')
                 context.load_verify_locations(ca_certs)
+                log.info('complete: ssl_wrap_socket: about to get ssl context')
             # Py32 raises IOError
             # Py33 raises FileNotFoundError
             except Exception as e:  # Reraise as SSLError
                 raise SSLError(e)
         if certfile:
             # FIXME: This block needs a test.
+            log.info('begin: ssl_wrap_socket: load cert chain')
             context.load_cert_chain(certfile, keyfile)
+            log.info('complete: ssl_wrap_socket: load cert chain')
         if HAS_SNI:  # Platform-specific: OpenSSL with enabled SNI
-            return context.wrap_socket(sock, server_hostname=server_hostname)
-        return context.wrap_socket(sock)
+            log.info('begin: ssl_wrap_socket: wrap socket with host name')
+            ret_val =  context.wrap_socket(sock, server_hostname=server_hostname)
+            log.info('complete: ssl_wrap_socket: wrap socket with host name')
+            return ret_val
+        log.info('begin: ssl_wrap_socket: wrap socket without host name')
+        ret_val context.wrap_socket(sock)
+        log.info('complete: ssl_wrap_socket: wrap socket without host name')
+        return ret_val
 
 else:  # Python 3.1 and earlier
     def ssl_wrap_socket(sock, keyfile=None, certfile=None, cert_reqs=None,
