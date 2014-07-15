@@ -117,7 +117,7 @@ if SSLContext is not None:  # Python 3.2+
             try:
                 log.info('begin: ssl_wrap_socket: load verify locations')
                 context.load_verify_locations(ca_certs)
-                log.info('complete: ssl_wrap_socket: about to get ssl context')
+                log.info('complete: ssl_wrap_socket: load verify locations')
             # Py32 raises IOError
             # Py33 raises FileNotFoundError
             except Exception as e:  # Reraise as SSLError
